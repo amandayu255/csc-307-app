@@ -73,6 +73,10 @@ app.get("/users", (req, res) => {
 const findUserById = (id) =>
     users["users_list"].find((user) => user["id"] === id);
 
+const generateRandomId = () => {
+    return Math.random().toString(36).substr(2, 9);
+};
+
 app.get("/users/:id", (req, res) => {
     const id = req.params["id"]; //or req.params.id
     let result = findUserById(id);
@@ -90,8 +94,11 @@ const addUser = (user) => {
 
 app.post("/users", (req, res) => {
     const userToAdd = req.body;
+    if (!userToAdd.id) {
+        userToAdd.id = generateRandomId();
+    }
     addUser(userToAdd);
-    res.send();
+    res.status(201).location(`/users/${userToAdd.id}`).send(userToAdd);
 });
 
 app.delete("/users/:id", (req, res) => {
