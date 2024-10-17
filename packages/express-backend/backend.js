@@ -73,10 +73,6 @@ app.get("/users", (req, res) => {
 const findUserById = (id) =>
     users["users_list"].find((user) => user["id"] === id);
 
-const generateRandomId = () => {
-    return Math.random().toString(36).substr(2, 9);
-};
-
 app.get("/users/:id", (req, res) => {
     const id = req.params["id"]; //or req.params.id
     let result = findUserById(id);
@@ -87,18 +83,29 @@ app.get("/users/:id", (req, res) => {
     }
 });
 
-const addUser = (user) => {
-    users["users_list"].push(user);
-    return user;
+const generateRandomId = () => {
+    return Math.random().toString(36).substr(2, 9);
 };
 
-app.post("/users", (req, res) => {
-    const userToAdd = req.body;
-    if (!userToAdd.id) {
-        userToAdd.id = generateRandomId();
+const addUser = (user) => {
+    const id = generateRandomId();
+    const userWithId = { ...user, id };
+    users.users_list.push(userWithId);
+    return userWithId;
+};
+
+app.post('/users', (req, res) => {
+    const userToAdd = req.body; // Get user data from the request body
+
+    // Validate the incoming data
+    if (!userToAdd.name || !userToAdd.job) {
+        return res.status(400).send({ error: 'Name and job are required' });
     }
-    addUser(userToAdd);
-    res.status(201).location(`/users/${userToAdd.id}`).send(userToAdd);
+
+    const id = generateRandomId(); // Generate a random ID
+    const newUser = { ...userToAdd, id }; // Create a new user object with ID
+    users.users_list.push(newUser); // Add the new user to the list
+    res.status(201).send(newUser); // Return the new user with ID
 });
 
 app.delete("/users/:id", (req, res) => {
