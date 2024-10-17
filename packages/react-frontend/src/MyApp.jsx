@@ -5,6 +5,11 @@ import Form from "./Form";
 function MyApp() {
   const [characters, setCharacters] = useState([]);
 
+  function fetchUsers() {
+    const promise = fetch("http://localhost:8000/users");
+    return promise;
+  }
+  
   useEffect(() => {
     fetchUsers()
       .then((res) => res.json())
@@ -14,27 +19,11 @@ function MyApp() {
       });
   }, []);
 
-  async function removeOneCharacter(id) {
-    try {
-      const response = await fetch(`http://localhost:8000/users/${id}`, {
-        method: "DELETE",
-      });
-
-      if (response.status === 204) {
-        const updated = characters.filter((character) => character.id !== id);
-        setCharacters(updated);
-      } else if (response.status === 404) {
-        console.error("User not found:", response.status);
-      } else {
-        console.error("Failed to delete user:", response.status);
-      }
-    } catch (error) {
-      console.error("Error:", error);
-    }
-  }
-
-  function fetchUsers() {
-    return fetch("http://localhost:8000/users");
+  function removeOneCharacter(index) {
+    const updated = characters.filter((character, i) => {
+      return i !== index;
+    });
+    setCharacters(updated);
   }
 
   const postUser = async (person) => {
@@ -48,8 +37,8 @@ function MyApp() {
       });
 
       if (response.status === 201) {
-        const newUser = await response.json(); 
-        setCharacters((prevCharacters) => [...prevCharacters, newUser]); 
+        const newUser = await response.json();
+        setCharacters((prevUsers) => [...prevUsers, newUser]);
       } else {
         console.error("Failed to add user:", response.status);
       }
@@ -59,9 +48,11 @@ function MyApp() {
   };
 
   function updateList(person) {
-    postUser(person).catch((error) => {
-      console.log(error);
-    });
+    postUser(person)
+      .then(() => setCharacters([...characters, person]))
+      .catch((error) => {
+        console.log(error);
+      });
   }
 
   return (
