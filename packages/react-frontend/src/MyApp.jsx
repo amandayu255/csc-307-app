@@ -9,7 +9,7 @@ function MyApp() {
     const promise = fetch("http://localhost:8000/users");
     return promise;
   }
-  
+
   useEffect(() => {
     fetchUsers()
       .then((res) => res.json())
@@ -19,33 +19,31 @@ function MyApp() {
       });
   }, []);
 
-  function removeOneCharacter(index) {
-    const updated = characters.filter((character, i) => {
-      return i !== index;
-    });
-    setCharacters(updated);
+  function removeOneCharacter(id, index) {
+    const url = `http://localhost:8000/users/${id}`;
+
+    fetch(url, { method: "DELETE" })
+      .then((response) => {
+        if (response.status === 204) {
+          const updated = characters.filter((character, i) => i !== index);
+          setCharacters(updated);
+        } else if (response.status === 404) {
+          alert("User not found");
+        } 
+      })
   }
 
-  const postUser = async (person) => {
-    try {
-      const response = await fetch("http://localhost:8000/users", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(person),
-      });
-
-      if (response.status === 201) {
-        const newUser = await response.json();
-        setCharacters((prevUsers) => [...prevUsers, newUser]);
-      } else {
-        console.error("Failed to add user:", response.status);
-      }
-    } catch (error) {
-      console.error("Error:", error);
-    }
-  };
+  function postUser(person) {
+    const promise = fetch("Http://localhost:8000/users", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(person)
+    });
+  
+    return promise;
+  }
 
   function updateList(person) {
     postUser(person)
