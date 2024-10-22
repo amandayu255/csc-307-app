@@ -1,5 +1,18 @@
 import express from "express";
 import cors from "cors";
+import userService from "./services/user-service.js";
+
+import dotenv from "dotenv";
+import mongoose from "mongoose";
+
+dotenv.config();
+
+const { MONGO_CONNECTION_STRING } = process.env;
+
+mongoose.set("debug", true);
+mongoose
+    .connect(MONGO_CONNECTION_STRING)
+    .catch((error) => console.log(error));
 
 const app = express();
 const port = 8000;
@@ -12,109 +25,52 @@ app.get("/", (req, res) => {
 });
 
 app.listen(port, () => {
-    console.log(
-        `Example app listening at http://localhost:${port}`
-    );
+    console.log(`Example app listening at http://localhost:${port}`);
 });
-
-const users = {
-    users_list: [
-        {
-            id: "xyz789",
-            name: "Charlie",
-            job: "Janitor"
-        },
-        {
-            id: "abc123",
-            name: "Mac",
-            job: "Bouncer"
-        },
-        {
-            id: "ppp222",
-            name: "Mac",
-            job: "Professor"
-        },
-        {
-            id: "yat999",
-            name: "Dee",
-            job: "Aspring actress"
-        },
-        {
-            id: "zap555",
-            name: "Dennis",
-            job: "Bartender"
-        }
-    ]
-};
-
-const findUserByName = (name) => {
-    return users["users_list"].filter(
-        (user) => user["name"] === name
-    );
-};
 
 app.get("/users", (req, res) => {
     const name = req.query.name;
     const job = req.query.job;
 
-    let result = users["users_list"];
-
-    if (name && job) {
-        result = result.filter(user => user.name === name && user.job === job);
-    } else if (name) {
-        result = result.filter(user => user.name === name);
-    } else if (job) {
-        result = result.filter(user => user.job === job);
-    }
-
-    res.send({ users_list: result });
+    userService.getUsers(name, job)
+        .then(usersList => {
+            res.send({ users_list: usersList });
+        })
 });
-
-const findUserById = (id) =>
-    users["users_list"].find((user) => user["id"] === id);
 
 app.get("/users/:id", (req, res) => {
-    const id = req.params["id"]; //or req.params.id
-    let result = findUserById(id);
-    if (result === undefined) {
-        res.status(404).send("Resource not found.");
-    } else {
-        res.send(result);
-    }
+    const id = req.params["id"];
+
+    userService.findUserById(id)
+        .then(user => {
+            if (user) {
+                res.send(user);
+            } else {
+                res.status(404).send("Resource not found.");
+            }
+        })
+
 });
 
-const generateRandomId = () => {
-    return Math.random().toString(36).substr(2, 9);
-};
-
-const addUser = (user) => {
-    const id = generateRandomId();
-    const userWithId = { ...user, id };
-    users.users_list.push(userWithId);
-    return userWithId;
-};
-
 app.post('/users', (req, res) => {
-    const userToAdd = req.body; // Get user data from the request body
+    const userToAdd = req.body;
 
-    // Validate the incoming data
     if (!userToAdd.name || !userToAdd.job) {
         return res.status(400).send({ error: 'Name and job are required' });
     }
 
-    const id = generateRandomId(); // Generate a random ID
-    const newUser = { ...userToAdd, id }; // Create a new user object with ID
-    users.users_list.push(newUser); // Add the new user to the list
-    res.status(201).send(newUser); // Return the new user with ID
+    userService.addUser(userToAdd)
+        .then(newUser => {
+            res.status(201).send(newUser);
+        })
 });
 
-app.delete("/users/:id", (req, res) => {
+app.delete("/users/:id", async (req, res) => {
     const id = req.params.id;
-    const initialLength = users["users_list"].length;
-    users["users_list"] = users["users_list"].filter(user => user.id !== id);
-    users["users_list"] = users["users_list"].filter(user => user.job !== job);
+    const deletedUser = await userService.findUserByIdAndDelete(id);
 
-    if (users["users_list"].length === initialLength) {
+    if (!deletedUser) {
+        console.log(`User with ID ${id} not found.`);
         return res.status(404).send("User not found.");
     }
 
