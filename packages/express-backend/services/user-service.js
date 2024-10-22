@@ -31,10 +31,15 @@ function findUserByJob(job) {
     return userModel.find({ job: job });
 }
 
+function findUserByIdAndDelete(id) {
+    return userModel.findByIdAndDelete(id);
+}
+
 export default {
     addUser,
     getUsers,
     findUserById,
     findUserByName,
     findUserByJob,
+    findUserByIdAndDelete,
 };
